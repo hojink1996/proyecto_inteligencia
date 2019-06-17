@@ -382,7 +382,7 @@ class FrameOperator:
         """
         skew_value = skew(np.array(frame).flatten())
 
-        return skew_value
+        return float(skew_value)
 
     @staticmethod
     def show_frame(frame):
@@ -395,6 +395,7 @@ class FrameOperator:
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
+
 video_operator = VideoOperator('Videos/usuario_1_1.mp4')
-luminance, ssim, energy, entropy, r, g, b, y, cb ,cr ,skewness = video_operator.obtain_values()
+luminance, ssim, energy, entropy, r, g, b, y, cb, cr, skewness = video_operator.obtain_values()
 print('Done')
