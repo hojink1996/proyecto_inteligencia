@@ -1,3 +1,9 @@
+"""
+Proyecto Final de Imagenes del Ramo EL5206-1 Laboratorio de Inteligencia Computacional.
+
+@authors: Hojin Kang and Eduardo Salazar
+"""
+
 import cv2
 import numpy as np
 
@@ -24,6 +30,29 @@ class VideoOperator:
         self._ssim = []
         self._energies = []
         self._entropies = []
+        self._mean_r = []
+        self._mean_g = []
+        self._mean_b = []
+        self._mean_y = []
+        self._mean_cb = []
+        self._mean_cr = []
+
+    def _calculate_mean_ycbcr(self) -> (list, list, list):
+        """
+        Calculates the mean values for the YCbCr channels of each frame.
+
+        :return:    A tuple with the mean values of the Y, Cb and Cr channels respectively.
+        """
+        if len(self._mean_r) == 0:
+            self._calculate_luminance()
+
+        # Get the YCbCr values from our RGB values
+        for r, g, b in zip(self._mean_r, self._mean_g, self._mean_b):
+            self._mean_y.append(0.258*r + 0.504*g + 0.098*b + 16)
+            self._mean_cb.append(-0.148*r - 0.291*g + 0.439*b + 128)
+            self._mean_cr.append(0.439*r - 0.368*g - 0.071*b + 128)
+
+        return self._mean_y, self._mean_cb, self._mean_cr
 
     def _detect_faces(self) -> list:
         """
@@ -54,19 +83,24 @@ class VideoOperator:
 
         return self._quality_check
 
-    def _calculate_luminance(self) -> list:
+    def _calculate_luminance(self) -> (list, list, list, list):
         """
-        Calculates the luminance of the frames
+        Calculates the luminance and the average value per channel of the frames.
 
-        :return:    A list with the luminance of each of the frames of the video
+        :return:    A tuple containing the list of the values for the luminance per frame in the first position,
+                    and the average of the R, G and B channels respectively in the rest of the channels.
         """
         if len(self._faces) == 0:
             self._detect_faces()
 
         for face in self._faces:
-            self._luminance.append(self._frame_operator.calculate_luminance(face))
+            luminance_value, r, g, b = self._frame_operator.calculate_luminance(face)
+            self._luminance.append(luminance_value)
+            self._mean_r.append(r)
+            self._mean_g.append(g)
+            self._mean_b.append(b)
 
-        return self._luminance
+        return self._luminance, self._mean_r, self._mean_g, self._mean_b
 
     def _calculate_ssim(self) -> list:
         """
@@ -271,7 +305,7 @@ class FrameOperator:
         """
         return shannon_entropy(frame)
 
-    def calculate_luminance(self, frame) -> float:
+    def calculate_luminance(self, frame) -> (float, float, float, float):
         """
         Calculates the luminance of the frame. This is done with the following equation:
 
@@ -281,14 +315,17 @@ class FrameOperator:
 
         This equation is from D. Garud. (2016). Face Liveliness Detection. (1)
 
+        Also returns the mean of each channel of the image
+
         :param frame:   Frame from which to calculate the luminance (considered in BGR format)
-        :return:        The luminance of the frame
+        :return:        A tuple containing the luminance of the image in the first value, and the means
+                        of the R, G and B channels respectively in the rest of the channels
         """
         R = frame[:, :, 2]
         G = frame[:, :, 1]
         B = frame[:, :, 0]
 
-        return 0.299*np.mean(R) + 0.587*np.mean(G) + 0.114*np.mean(B)
+        return 0.299*np.mean(R) + 0.587*np.mean(G) + 0.114*np.mean(B), np.mean(R), np.mean(G), np.mean(B)
 
     @staticmethod
     def show_frame(frame):
@@ -305,5 +342,6 @@ video_operator = VideoOperator('Videos/usuario_1_1.mp4')
 entropy = video_operator._calculate_entropy()
 energy = video_operator._calculate_energy()
 ssim = video_operator._calculate_ssim()
-luminance = video_operator._calculate_luminance()
+luminance, r, g, b = video_operator._calculate_luminance()
+y, cb, cr = video_operator._calculate_mean_ycbcr()
 print('Done')
