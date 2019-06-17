@@ -8,6 +8,7 @@ import cv2
 import numpy as np
 
 from skimage.measure import compare_ssim, shannon_entropy
+from scipy.stats import skew
 
 
 class VideoOperator:
@@ -36,6 +37,46 @@ class VideoOperator:
         self._mean_y = []
         self._mean_cb = []
         self._mean_cr = []
+        self._skewness = []
+
+    def obtain_values(self) -> (list, list, list, list, list, list, list, list, list, list, list):
+        """
+        Calculates all the values needed for the classification of the video.
+
+        :return:    A tuple of lists needed for the classification. In order we have the list of luminance, ssim,
+                    energy, entropy, mean for the r, g, b, y, cb and cr channels and skewness. The lists contain
+                    the values for each of the frames.
+        """
+        self._calculate_values()
+        return (self._luminance, self._ssim, self._energies, self._entropies, self._mean_r, self._mean_g, self._mean_b,
+                self._mean_y, self._mean_cb, self._mean_cr, self._skewness)
+
+    def _calculate_values(self):
+        """
+        Calculates the parameters we need for the evaluation.
+        """
+        self._calculate_luminance()
+        self._calculate_ssim()
+        self._calculate_energy()
+        self._calculate_entropy()
+        self._calculate_skewness()
+        self._calculate_mean_ycbcr()
+
+    def _calculate_skewness(self) -> list:
+        """
+        Calculate the skewness of each frame of the video.
+
+        :return:    A list with the skewness of each frame.
+        """
+        if len(self._faces) == 0:
+            self._calculate_luminance()
+
+        # Get the YCbCr values from our RGB values
+        if len(self._skewness) == 0:
+            for face in self._quality_check:
+                self._skewness.append(self._frame_operator.calculate_skewness(face))
+
+        return self._skewness
 
     def _calculate_mean_ycbcr(self) -> (list, list, list):
         """
@@ -47,10 +88,11 @@ class VideoOperator:
             self._calculate_luminance()
 
         # Get the YCbCr values from our RGB values
-        for r, g, b in zip(self._mean_r, self._mean_g, self._mean_b):
-            self._mean_y.append(0.258*r + 0.504*g + 0.098*b + 16)
-            self._mean_cb.append(-0.148*r - 0.291*g + 0.439*b + 128)
-            self._mean_cr.append(0.439*r - 0.368*g - 0.071*b + 128)
+        if len(self._mean_y) == 0:
+            for r, g, b in zip(self._mean_r, self._mean_g, self._mean_b):
+                self._mean_y.append(0.258*r + 0.504*g + 0.098*b + 16)
+                self._mean_cb.append(-0.148*r - 0.291*g + 0.439*b + 128)
+                self._mean_cr.append(0.439*r - 0.368*g - 0.071*b + 128)
 
         return self._mean_y, self._mean_cb, self._mean_cr
 
@@ -93,12 +135,13 @@ class VideoOperator:
         if len(self._faces) == 0:
             self._detect_faces()
 
-        for face in self._faces:
-            luminance_value, r, g, b = self._frame_operator.calculate_luminance(face)
-            self._luminance.append(luminance_value)
-            self._mean_r.append(r)
-            self._mean_g.append(g)
-            self._mean_b.append(b)
+        if len(self._luminance) == 0:
+            for face in self._faces:
+                luminance_value, r, g, b = self._frame_operator.calculate_luminance(face)
+                self._luminance.append(luminance_value)
+                self._mean_r.append(r)
+                self._mean_g.append(g)
+                self._mean_b.append(b)
 
         return self._luminance, self._mean_r, self._mean_g, self._mean_b
 
@@ -111,8 +154,9 @@ class VideoOperator:
         if len(self._faces) == 0:
             self._detect_faces()
 
-        for face in self._quality_check:
-            self._ssim.append(self._frame_operator.calculate_ssim(face))
+        if len(self._ssim) == 0:
+            for face in self._quality_check:
+                self._ssim.append(self._frame_operator.calculate_ssim(face))
 
         return self._ssim
 
@@ -125,8 +169,9 @@ class VideoOperator:
         if len(self._faces) == 0:
             self._detect_faces()
 
-        for face in self._quality_check:
-            self._energies.append(self._frame_operator.calculate_energy(face))
+        if len(self._energies) == 0:
+            for face in self._quality_check:
+                self._energies.append(self._frame_operator.calculate_energy(face))
 
         return self._energies
 
@@ -139,8 +184,9 @@ class VideoOperator:
         if len(self._faces) == 0:
             self._detect_faces()
 
-        for face in self._quality_check:
-            self._entropies.append(self._frame_operator.calculate_entropy(face))
+        if len(self._entropies) == 0:
+            for face in self._quality_check:
+                self._entropies.append(self._frame_operator.calculate_entropy(face))
 
         return self._entropies
 
@@ -327,6 +373,17 @@ class FrameOperator:
 
         return 0.299*np.mean(R) + 0.587*np.mean(G) + 0.114*np.mean(B), np.mean(R), np.mean(G), np.mean(B)
 
+    def calculate_skewness(self, frame) -> float:
+        """
+        Calculate the skewness of a frame.
+
+        :param frame:   The frame from which to calculate the skewness. The image must be in gray scale.
+        :return:        A float value corresponding to the skewness of the frame.
+        """
+        skew_value = skew(np.array(frame).flatten())
+
+        return skew_value
+
     @staticmethod
     def show_frame(frame):
         """
@@ -339,9 +396,5 @@ class FrameOperator:
         cv2.destroyAllWindows()
 
 video_operator = VideoOperator('Videos/usuario_1_1.mp4')
-entropy = video_operator._calculate_entropy()
-energy = video_operator._calculate_energy()
-ssim = video_operator._calculate_ssim()
-luminance, r, g, b = video_operator._calculate_luminance()
-y, cb, cr = video_operator._calculate_mean_ycbcr()
+luminance, ssim, energy, entropy, r, g, b, y, cb ,cr ,skewness = video_operator.obtain_values()
 print('Done')
