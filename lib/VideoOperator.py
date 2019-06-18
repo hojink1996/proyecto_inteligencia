@@ -397,6 +397,115 @@ class FrameOperator:
         cv2.destroyAllWindows()
 
 
+class MultiVideo:
+    """
+    Class that obtains the results for multiple videos.
+    """
+    def __init__(self, original_path='videos/', attack_path='videos_ataque/',
+                 root_path='C:/Users/Hojin/PycharmProjects/proyecto_inteligencia/'):
+        """
+        Initialize the MultiVideo Class
+
+        :param original_path:   The path to the original videos
+        :param attack_path:     The path to the attack videos
+        :param root_path:       The path to the root where the original videos and attack videos are
+        """
+        self._original_videos_path = f'{root_path}{original_path}'
+        self._attack_videos_path = f'{root_path}{attack_path}'
+
+    def get_videos_result_range(self, users_range_min, users_range_max, video_range_min, video_range_max,
+                                attack_users_range_min, attack_users_range_max, attack_video_range_min,
+                                attack_video_range_max):
+        """
+        Gets the results for the videos in the given range
+
+        :param users_range_min:             The minimum value for the user range for original videos
+        :param users_range_max:             The maximum value for the user range for original videos
+        :param video_range_min:             The minimum value for the video range for original videos
+        :param video_range_max:             The maximum value for the video range for original videos
+        :param attack_users_range_min:      The minimum value for the attack range for original videos
+        :param attack_users_range_max:      The maximum value for the attack range for original videos
+        :param attack_video_range_min:      The minimum value for the video range for attack videos
+        :param attack_video_range_max:      The maximum value for the video range for attack videos
+        :return:                            A tuple of tuples, where the first tuple has the results
+                                            for the original videos and the second tuple has the results
+                                            for the attack videos.
+        """
+        luminance_original = []
+        ssim_original = []
+        energies_original = []
+        entropies_original = []
+        mean_r_original = []
+        mean_g_original = []
+        mean_b_original = []
+        mean_y_original = []
+        mean_cb_original = []
+        mean_cr_original = []
+        skewness_original = []
+
+        # Calculate for original videos
+        for user_index in range(users_range_min, users_range_max):
+            for video_index in range(video_range_min, video_range_max):
+                video_original = VideoOperator(f'videos/usuario_{user_index}_{video_index}.mp4')
+
+                # Get the results
+                (luminance, ssim, energies, entropies, mean_r, mean_g, mean_b, mean_y, mean_cb, mean_cr,
+                 skewness) = video_original.obtain_values()
+
+                # Add the values to the end of the lists
+                luminance_original.extend(luminance)
+                ssim_original.extend(ssim)
+                energies_original.extend(energies)
+                entropies_original.extend(entropies)
+                mean_r_original.extend(mean_r)
+                mean_g_original.extend(mean_g)
+                mean_b_original.extend(mean_b)
+                mean_y_original.extend(mean_y)
+                mean_cb_original.extend(mean_cb)
+                mean_cr_original.extend(mean_cr)
+                skewness_original.extend(skewness)
+
+        luminance_attack = []
+        ssim_attack = []
+        energies_attack = []
+        entropies_attack = []
+        mean_r_attack = []
+        mean_g_attack = []
+        mean_b_attack = []
+        mean_y_attack = []
+        mean_cb_attack = []
+        mean_cr_attack = []
+        skewness_attack = []
+
+        # Calculate for original videos
+        for user_index in range(attack_users_range_min, attack_users_range_max):
+            for video_index in range(attack_video_range_min, attack_video_range_max):
+                video_original = VideoOperator(f'videos_ataque/ataque_{user_index}_{video_index}.mp4')
+
+                # Get the results
+                (luminance, ssim, energies, entropies, mean_r, mean_g, mean_b, mean_y, mean_cb, mean_cr,
+                 skewness) = video_original.obtain_values()
+
+                # Add the values to the end of the lists
+                luminance_attack.extend(luminance)
+                ssim_attack.extend(ssim)
+                energies_attack.extend(energies)
+                entropies_attack.extend(entropies)
+                mean_r_attack.extend(mean_r)
+                mean_g_attack.extend(mean_g)
+                mean_b_attack.extend(mean_b)
+                mean_y_attack.extend(mean_y)
+                mean_cb_attack.extend(mean_cb)
+                mean_cr_attack.extend(mean_cr)
+                skewness_attack.extend(skewness)
+
+        return ((luminance_original, ssim_original, energies_original, entropies_original, mean_r_original,
+                mean_g_original, mean_b_original, mean_y_original, mean_cb_original, mean_cr_original,
+                skewness_original), (luminance_attack, ssim_attack, energies_attack, entropies_attack,
+                mean_r_attack, mean_g_attack, mean_b_attack, mean_y_attack, mean_cb_attack, mean_cr_attack,
+                skewness_attack))
+
+
 class Plotter:
     """
     Class for plotting the values obatined
@@ -429,8 +538,6 @@ class Plotter:
             plt.show()
 
 
-video_operator = VideoOperator('videos/usuario_1_1.mp4')
-results_original = list(video_operator.obtain_values())
-video_operator = VideoOperator('videos_ataque/ataque_2_1.mp4')
-results_attack = list(video_operator.obtain_values())
-Plotter.plot_tuples(results_original, results_attack)
+multi_video = MultiVideo()
+(original, attack) = multi_video.get_videos_result_range(1, 5, 6, 10, 1, 5, 1, 5)
+
