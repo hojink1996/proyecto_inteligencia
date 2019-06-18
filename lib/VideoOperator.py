@@ -6,6 +6,7 @@ Proyecto Final de Imagenes del Ramo EL5206-1 Laboratorio de Inteligencia Computa
 
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
 
 from skimage.measure import compare_ssim, shannon_entropy
 from scipy.stats import skew
@@ -396,6 +397,40 @@ class FrameOperator:
         cv2.destroyAllWindows()
 
 
-video_operator = VideoOperator('Videos/usuario_1_1.mp4')
-luminance, ssim, energy, entropy, r, g, b, y, cb, cr, skewness = video_operator.obtain_values()
-print('Done')
+class Plotter:
+    """
+    Class for plotting the values obatined
+    """
+    @staticmethod
+    def plot_values(*plottable):
+        """
+        Plots the values received in a different plot each
+
+        :param plottable:   The values to plot
+        """
+        for graph in plottable:
+            plt.plot(graph)
+            plt.show()
+
+    @staticmethod
+    def plot_tuples(list_original, list_attack):
+        """
+        Plots the lists side by side
+
+        :param list_original:       List of original images
+        :param list_attack:         List of attack images
+        """
+        for index, original in enumerate(list_original):
+            attack = list_attack[index]
+            plt.plot(original, 'b', label='Original')
+            plt.plot(attack, 'r', label='Attack')
+            plt.legend()
+            plt.grid()
+            plt.show()
+
+
+video_operator = VideoOperator('videos/usuario_1_1.mp4')
+results_original = list(video_operator.obtain_values())
+video_operator = VideoOperator('videos_ataque/ataque_2_1.mp4')
+results_attack = list(video_operator.obtain_values())
+Plotter.plot_tuples(results_original, results_attack)
