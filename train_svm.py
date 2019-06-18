@@ -6,6 +6,7 @@ from sklearn import preprocessing
 from sklearn.svm import NuSVC
 from sklearn.metrics import confusion_matrix
 from sklearn.utils.multiclass import unique_labels
+from lib.VideoOperator import VideoOperator
 
 
 def plot_confusion_matrix(y_true, y_pred, classes,
@@ -62,6 +63,15 @@ def plot_confusion_matrix(y_true, y_pred, classes,
     return ax
 
 
+# Get the results for a single video
+video_test = VideoOperator('videos/usuario_1_1.mp4')
+results = video_test.obtain_values()
+results = pd.DataFrame(results).transpose()
+results['Video'] = True
+results['Type'] = 'Test'
+results['Output'] = 1
+print('Done')
+
 # Get the data
 root_path = 'C:/Users/Hojin/PycharmProjects/proyecto_inteligencia/'
 
@@ -93,18 +103,25 @@ original_test = original_test.iloc[attack_test.index].reset_index(drop=True)
 
 # Get the full DataFrame to normalize
 full_df = pd.concat([original_train, attack_train, original_test, attack_test]).reset_index(drop=True)
+full_df['Video'] = False
+full_df = pd.concat(full_df, results).reset_index(drop=True)
 
 # Get the type and output of each value
 type_series = full_df['Type']
 output_series = full_df['Output']
+video = full_df['Video']
 full_df = full_df.drop('Type', axis=1)
 full_df = full_df.drop('Output', axis=1)
+full_df = full_df.drop('Video', axis=1)
 
 # Scale the values
 x = full_df.values
 min_max_scaler = preprocessing.MinMaxScaler()
 x_scaled = min_max_scaler.fit_transform(x)
 full_df = pd.DataFrame(x_scaled)
+
+# Get the results
+results = full_df[video].copy()
 
 # Get the training and testing sets
 original_test = full_df[((type_series == 'Test') & (output_series == 1))].copy()
@@ -138,3 +155,12 @@ score = svm.score(test_x, test_y)
 plot_confusion_matrix(np.array(test_y).flatten(), np.array(predict).flatten(), np.array(['Attack', 'Original']), normalize=True,
                       title='Confusion Matrix del Clasificador de Liveliness')
 plt.show()
+
+# Get the prediction for the video
+predict_video = svm.predict(video)
+
+# Calculate the mean of the video
+mean_value_video = predict.mean()
+
+# Play the video with the prediction
+video_test.play_video_prediction(mean_value_video)

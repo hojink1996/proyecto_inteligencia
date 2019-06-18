@@ -24,6 +24,7 @@ class VideoOperator:
         """
         self._video = cv2.VideoCapture(f'{root_path}{video_path}')
         self._frame_operator = FrameOperator('imagen_base.jpeg', root_path)
+        self._video_frames = []
 
         # Lists where we will save the values
         self._luminance = []
@@ -39,6 +40,21 @@ class VideoOperator:
         self._mean_cb = []
         self._mean_cr = []
         self._skewness = []
+
+    def play_video_prediction(self, prediction, threshold=0.5):
+        """
+        Plays the video with the prediction in a red square if we detect it is an attack, and a green square
+        if we detect it is not.
+
+        :param prediction:      The mean of the predictions of the video
+        :param threshold:       The threshold to be considered either attack or original
+        """
+        if prediction < threshold:
+            for frame in self._video_frames:
+                self._frame_operator.play_square_face(frame, 'r')
+        else:
+            for frame in self._video_frames:
+                self._frame_operator.play_square_face(frame, 'b')
 
     def obtain_values(self) -> (list, list, list, list, list, list, list, list, list, list, list):
         """
@@ -110,6 +126,7 @@ class VideoOperator:
             # Detect the face in the frame
             if ret:
                 imgs = self._frame_operator.detect_face(frame)
+                self._video_frames.append(frame)
 
                 # No face was detected
                 if imgs is None:
@@ -212,7 +229,7 @@ class FrameOperator:
         """
         Initializes the FrameOperator Class
         """
-        self._face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+        self._face_cascade = cv2.CascadeClassifier(f'{root_path}lib/haarcascade_frontalface_default.xml')
         self._detect_initial_face(f'{root_path}{base_image_path}')
         self._base_width, self._base_height = self._base_image.shape
 
@@ -301,6 +318,48 @@ class FrameOperator:
 
         # Get cropped image
         self._base_image = gray_frame[row:row + height, column:column + width]
+
+    def play_square_face(self, frame, color):
+
+        """
+        Detects the face in a single frame of a video and plays it with a rectangle with the color red
+        if it is an attack or blue if it is an actual face
+
+        :param frame:   The frame from which to detect the face.
+        :param color:   The color for the rectangle, 'r' means red, 'b' means blue.
+        :return:        The cropped image of only the face.
+        """
+        frame = self.rotate_image(frame, 270)
+
+        # Turn the image to GrayScale so we can use Viola-Jones
+        gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+        # Detect the face
+        faces = self._face_cascade.detectMultiScale(gray_frame)
+
+        # There were no faces detected
+        if type(faces) is tuple:
+            return None
+        # If any face was detected
+        if (faces.shape[0]) > 1:
+            vals = [faces[index, 2] + faces[index, 3] for index in range(faces.shape[0])]
+            index = vals.index(max(vals))
+        else:
+            index = 0
+
+        (column, row, width, height) = faces[index, :]
+
+        # Set the color
+        if color == 'r':
+            color = (0, 0, 255)
+        if color == 'b':
+            color = (255, 0, 0)
+
+        cv2.rectangle(frame, (column, row), (column + width, row + height), color, 2)
+
+        cv2.imshow('img', frame)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
 
     def detect_face(self, frame):
 
@@ -536,8 +595,4 @@ class Plotter:
             plt.legend()
             plt.grid()
             plt.show()
-
-
-multi_video = MultiVideo()
-(original, attack) = multi_video.get_videos_result_range(1, 5, 6, 10, 1, 5, 1, 5)
 
