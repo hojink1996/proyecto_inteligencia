@@ -64,12 +64,12 @@ def plot_confusion_matrix(y_true, y_pred, classes,
 
 
 # Get the results for a single video
-video_test = VideoOperator('videos/usuario_1_1.mp4')
-results = video_test.obtain_values()
+video_test = VideoOperator('videos_ataque/ataque_1_3.mp4')
+results = list(video_test.obtain_values())
 results = pd.DataFrame(results).transpose()
-results['Video'] = True
 results['Type'] = 'Test'
 results['Output'] = 1
+results['Video'] = True
 print('Done')
 
 # Get the data
@@ -104,7 +104,8 @@ original_test = original_test.iloc[attack_test.index].reset_index(drop=True)
 # Get the full DataFrame to normalize
 full_df = pd.concat([original_train, attack_train, original_test, attack_test]).reset_index(drop=True)
 full_df['Video'] = False
-full_df = pd.concat(full_df, results).reset_index(drop=True)
+results.columns = full_df.columns
+full_df = pd.concat([full_df, results]).reset_index(drop=True)
 
 # Get the type and output of each value
 type_series = full_df['Type']
@@ -124,10 +125,10 @@ full_df = pd.DataFrame(x_scaled)
 results = full_df[video].copy()
 
 # Get the training and testing sets
-original_test = full_df[((type_series == 'Test') & (output_series == 1))].copy()
-attack_test = full_df[(type_series == 'Test') & (output_series == 0)].copy()
-original_train = full_df[(type_series == 'Train') & (output_series == 1)].copy()
-attack_train = full_df[(type_series == 'Train') & (output_series == 0)].copy()
+original_test = full_df[((type_series == 'Test') & (output_series == 1) & (video == False))].copy()
+attack_test = full_df[(type_series == 'Test') & (output_series == 0) & (video == False)].copy()
+original_train = full_df[(type_series == 'Train') & (output_series == 1) & (video == False)].copy()
+attack_train = full_df[(type_series == 'Train') & (output_series == 0) & (video == False)].copy()
 
 # Get the training and testing set
 original_test['Output'] = 1
@@ -146,7 +147,7 @@ test_y = testing_set['Output']
 test_x = testing_set.drop('Output', axis=1)
 
 # Train the SVM
-svm = NuSVC(nu=0.9)
+svm = NuSVC()
 svm.fit(train_x, train_y)
 predict = svm.predict(test_x)
 score = svm.score(test_x, test_y)
@@ -157,7 +158,7 @@ plot_confusion_matrix(np.array(test_y).flatten(), np.array(predict).flatten(), n
 plt.show()
 
 # Get the prediction for the video
-predict_video = svm.predict(video)
+predict_video = svm.predict(results)
 
 # Calculate the mean of the video
 mean_value_video = predict.mean()
