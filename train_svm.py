@@ -1,6 +1,13 @@
+"""
+Entrenamiento de SVM Proyecto Final de Imagenes del Ramo EL5206-1 Laboratorio de Inteligencia Computacional.
+
+@authors: Hojin Kang and Eduardo Salazar
+"""
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import pickle
 
 from sklearn import preprocessing
 from sklearn.svm import NuSVC
@@ -63,8 +70,19 @@ def plot_confusion_matrix(y_true, y_pred, classes,
     return ax
 
 
-# Get the results for a single video
-video_test = VideoOperator('videos_ataque/ataque_1_3.mp4')
+# Maps the video type to the needed name
+mapping_video_type = {'ataque': 'videos_ataque', 'original': 'videos'}
+mapping_video = {'ataque': 'ataque', 'original': 'usuario'}
+
+# Get the results for a single video (user must be between 1-6, example_number must be between 1-10)
+user = 1
+example_number = 9
+
+# Must be either 'ataque' or 'original'
+video_type = 'original'
+
+# Process the data for the single video
+video_test = VideoOperator(f'{mapping_video_type[video_type]}/{mapping_video[video_type]}_{user}_{example_number}.mp4')
 results = list(video_test.obtain_values())
 results = pd.DataFrame(results).transpose()
 results['Type'] = 'Test'
@@ -115,10 +133,13 @@ full_df = full_df.drop('Type', axis=1)
 full_df = full_df.drop('Output', axis=1)
 full_df = full_df.drop('Video', axis=1)
 
+# Obtain the mean and standard deviation
+std_values = pd.DataFrame(full_df.std()).to_csv('std_values.csv')
+mean_values = pd.DataFrame(full_df.mean()).to_csv('mean_values.csv')
+
 # Scale the values
 x = full_df.values
-min_max_scaler = preprocessing.MinMaxScaler()
-x_scaled = min_max_scaler.fit_transform(x)
+x_scaled = preprocessing.scale(x)
 full_df = pd.DataFrame(x_scaled)
 
 # Get the results
@@ -147,21 +168,35 @@ test_y = testing_set['Output']
 test_x = testing_set.drop('Output', axis=1)
 
 # Train the SVM
-svm = NuSVC()
+svm = NuSVC(nu=0.2)
 svm.fit(train_x, train_y)
 predict = svm.predict(test_x)
 score = svm.score(test_x, test_y)
 
+# Over the training set
+predict_train = svm.predict(train_x)
+score_train = svm.score(train_x, train_y)
+
 # Get the confusion matrix
-plot_confusion_matrix(np.array(test_y).flatten(), np.array(predict).flatten(), np.array(['Attack', 'Original']), normalize=True,
-                      title='Confusion Matrix del Clasificador de Liveliness')
+plot_confusion_matrix(np.array(test_y).flatten(), np.array(predict).flatten(), np.array(['Attack', 'Original']),
+                      normalize=True, title='Confusion Matrix del Clasificador de Liveliness')
+plt.show()
+
+
+# Get the confusion matrix for training
+plot_confusion_matrix(np.array(train_y).flatten(), np.array(predict_train).flatten(), np.array(['Attack', 'Original']),
+                      normalize=True, title='Confusion Matrix del Clasificador de Liveliness Testing Set')
 plt.show()
 
 # Get the prediction for the video
 predict_video = svm.predict(results)
 
 # Calculate the mean of the video
-mean_value_video = predict.mean()
+mean_value_video = predict_video.mean()
 
 # Play the video with the prediction
 video_test.play_video_prediction(mean_value_video)
+
+# Save the model
+filename = 'svm_model.sav'
+pickle.dump(svm, open(filename, 'wb'))
