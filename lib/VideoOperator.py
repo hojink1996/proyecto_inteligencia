@@ -7,7 +7,9 @@ Proyecto Final de Imagenes del Ramo EL5206-1 Laboratorio de Inteligencia Computa
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
+from abc import abstractmethod
 from skimage.measure import compare_ssim, shannon_entropy
 from scipy.stats import skew
 
@@ -472,6 +474,20 @@ class MultiVideo:
         self._original_videos_path = f'{root_path}{original_path}'
         self._attack_videos_path = f'{root_path}{attack_path}'
 
+    @abstractmethod
+    def save_to_csv(tuple_values: tuple, name: str):
+        """
+        Saves the values obtained as a Tuple of lists to a CSV
+
+        :param tuple_values:    The values as a tuple of lists
+        :param name:            The name of the CSV to export
+        """
+        list_values = list(tuple_values)
+        pandas_values = pd.DataFrame(list_values).transpose()
+
+        # Export to CSV
+        pandas_values.to_csv(name)
+
     def get_videos_result_range(self, users_range_min, users_range_max, video_range_min, video_range_max,
                                 attack_users_range_min, attack_users_range_max, attack_video_range_min,
                                 attack_video_range_max):
@@ -595,4 +611,11 @@ class Plotter:
             plt.legend()
             plt.grid()
             plt.show()
+
+
+multi_video = MultiVideo()
+original, attack = multi_video.get_videos_result_range(1, 6, 9, 10, 1, 6, 9, 10)
+MultiVideo.save_to_csv(original, 'original_test.csv')
+MultiVideo.save_to_csv(attack, 'attack_test.csv')
+
 
