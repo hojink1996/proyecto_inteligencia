@@ -519,8 +519,8 @@ class MultiVideo:
         skewness_original = []
 
         # Calculate for original videos
-        for user_index in range(users_range_min, users_range_max):
-            for video_index in range(video_range_min, video_range_max):
+        for user_index in range(users_range_min, users_range_max + 1):
+            for video_index in range(video_range_min, video_range_max + 1):
                 video_original = VideoOperator(f'videos/usuario_{user_index}_{video_index}.mp4')
 
                 # Get the results
@@ -553,8 +553,8 @@ class MultiVideo:
         skewness_attack = []
 
         # Calculate for original videos
-        for user_index in range(attack_users_range_min, attack_users_range_max):
-            for video_index in range(attack_video_range_min, attack_video_range_max):
+        for user_index in range(attack_users_range_min, attack_users_range_max + 1):
+            for video_index in range(attack_video_range_min, attack_video_range_max + 1):
                 video_original = VideoOperator(f'videos_ataque/ataque_{user_index}_{video_index}.mp4')
 
                 # Get the results
@@ -611,11 +611,4 @@ class Plotter:
             plt.legend()
             plt.grid()
             plt.show()
-
-
-multi_video = MultiVideo()
-original, attack = multi_video.get_videos_result_range(1, 6, 9, 10, 1, 6, 9, 10)
-MultiVideo.save_to_csv(original, 'original_test.csv')
-MultiVideo.save_to_csv(attack, 'attack_test.csv')
-
 

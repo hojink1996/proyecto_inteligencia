@@ -73,10 +73,11 @@ def plot_confusion_matrix(y_true, y_pred, classes,
 # Maps the video type to the needed name
 mapping_video_type = {'ataque': 'videos_ataque', 'original': 'videos'}
 mapping_video = {'ataque': 'ataque', 'original': 'usuario'}
+mapping_value = {'ataque': 0, 'original': 1}
 
 # Get the results for a single video (user must be between 1-6, example_number must be between 1-10)
-user = 1
-example_number = 9
+user = 6
+example_number = 3
 
 # Must be either 'ataque' or 'original'
 video_type = 'original'
@@ -86,7 +87,7 @@ video_test = VideoOperator(f'{mapping_video_type[video_type]}/{mapping_video[vid
 results = list(video_test.obtain_values())
 results = pd.DataFrame(results).transpose()
 results['Type'] = 'Test'
-results['Output'] = 1
+results['Output'] = mapping_value[video_type]
 results['Video'] = True
 print('Done')
 
@@ -103,9 +104,6 @@ original_train['Output'] = 1
 attack_train['Type'] = 'Train'
 attack_train['Output'] = 0
 
-# Make so there are the same number of samples for both dataframes
-original_train = original_train.iloc[attack_train.index].reset_index(drop=True)
-
 # Get the original data and attack data for testing
 original_test = pd.read_csv(f'{root_path}original_test.csv', index_col=0).reset_index(drop=True)
 attack_test = pd.read_csv(f'{root_path}attack_test.csv', index_col=0).reset_index(drop=True)
@@ -115,9 +113,6 @@ original_test['Type'] = 'Test'
 original_test['Output'] = 1
 attack_test['Type'] = 'Test'
 attack_test['Output'] = 0
-
-# Make so there are the same number of samples for both dataframes
-original_test = original_test.iloc[attack_test.index].reset_index(drop=True)
 
 # Get the full DataFrame to normalize
 full_df = pd.concat([original_train, attack_train, original_test, attack_test]).reset_index(drop=True)
@@ -188,6 +183,10 @@ plot_confusion_matrix(np.array(train_y).flatten(), np.array(predict_train).flatt
                       normalize=True, title='Confusion Matrix del Clasificador de Liveliness Testing Set')
 plt.show()
 
+# Save the model
+filename = 'svm_model.sav'
+pickle.dump(svm, open(filename, 'wb'))
+
 # Get the prediction for the video
 predict_video = svm.predict(results)
 
@@ -196,7 +195,3 @@ mean_value_video = predict_video.mean()
 
 # Play the video with the prediction
 video_test.play_video_prediction(mean_value_video)
-
-# Save the model
-filename = 'svm_model.sav'
-pickle.dump(svm, open(filename, 'wb'))

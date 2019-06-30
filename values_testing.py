@@ -18,7 +18,7 @@ user = 1
 example_number = 9
 
 # Must be either 'ataque' or 'original'
-video_type = 'original'
+video_type = 'ataque'
 
 # Process the data for the single video
 video_test = VideoOperator(f'{mapping_video_type[video_type]}/{mapping_video[video_type]}_{user}_{example_number}.mp4')
@@ -28,6 +28,8 @@ results = pd.DataFrame(results).transpose()
 # Standarize the data
 std_values = pd.read_csv('std_values.csv')
 mean_values = pd.read_csv('mean_values.csv')
+std_values = std_values['0']
+mean_values = mean_values['0']
 results = (results - mean_values) / std_values
 
 # Load the model
